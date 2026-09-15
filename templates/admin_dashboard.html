@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — CareerCatalyst{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h2>Admin Dashboard</h2>
+    <p>Manage companies, students, and track all applications.</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-value">{{ companies|length }}</div>
+        <div class="stat-label">Companies</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ total_apps }}</div>
+        <div class="stat-label">Applications</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ students|length }}</div>
+        <div class="stat-label">Students</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ all_applications|selectattr('application.status','equalto','Placed')|list|length }}</div>
+        <div class="stat-label">Placed</div>
+    </div>
+</div>
+
+<!-- Tab Navigation -->
+<div class="admin-tabs">
+    <button class="admin-tab active" onclick="showTab('tab-companies', this)">🏢 Companies</button>
+    <button class="admin-tab" onclick="showTab('tab-students', this)">🎓 Students</button>
+    <button class="admin-tab" onclick="showTab('tab-applications', this)">📋 Applications</button>
+</div>
+
+<!-- ===== TAB: COMPANIES ===== -->
+<div id="tab-companies" class="admin-tab-panel">
+
+    <!-- Add Company Form -->
+    <div class="card" style="margin-bottom:32px;">
+        <h3 style="margin-bottom:4px;">➕ Add New Company</h3>
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">Fill in all the details for the new company listing.</p>
+
+        <form method="POST" action="{{ url_for('companies') }}" class="admin-form">
+            {{ form.hidden_tag() }}
+
+            <div class="admin-form-row">
+                {{ form.name(placeholder="Company Name *") }}
+                {{ form.role(placeholder="Job Role *") }}
+            </div>
+            <div class="admin-form-row">
+                {{ form.package(placeholder="Package (e.g. 12 LPA) *") }}
+                {{ form.min_cgpa(placeholder="Min CGPA (e.g. 7.5) *") }}
+            </div>
+            <div class="admin-form-row">
+                {{ form.location(placeholder="Location (e.g. Bangalore)") }}
+            </div>
+            <div class="admin-form-row">
+                {{ form.website(placeholder="Website URL (optional)") }}
+            </div>
+            {{ form.description(placeholder="Company description — culture, work environment, perks, etc.") }}
+
+            {{ form.submit(class="btn btn-success", style="margin-top:12px;") }}
+        </form>
+    </div>
+
+    <!-- Company Listing -->
+    <div class="section-heading">
+        <h3>🏢 All Companies ({{ companies|length }})</h3>
+        <a href="{{ url_for('companies') }}" class="btn btn-outline btn-sm">Public View →</a>
+    </div>
+
+    {% if companies %}
+    <div class="company-grid">
+        {% set colors = ['av-0','av-1','av-2','av-3','av-4','av-5','av-6','av-7','av-8','av-9'] %}
+        {% for c in companies %}
+        {% set ci = loop.index0 % 10 %}
+        <div class="card">
+            <div class="company-card-header">
+                <div class="company-avatar {{ colors[ci] }}">{{ c.name[0].upper() }}</div>
+                <div class="company-card-title">
+                    <h3>{{ c.name }}</h3>
+                </div>
+            </div>
+
+            <div class="badges">
+                {% if c.location %}<span class="badge badge-purple">📍 {{ c.location }}</span>{% endif %}
+            </div>
+
+            <hr class="divider">
+            <p><b style="color:#93c5fd;">Role:</b> {{ c.role }}</p>
+            <p><b style="color:#93c5fd;">Package:</b> {{ c.package }}</p>
+            <p><b style="color:#93c5fd;">Min CGPA:</b> {{ c.min_cgpa }}</p>
+
+            {% if c.description %}
+            <p style="margin-top:8px;font-size:12px;color:var(--text-dim);">
+                {{ c.description[:80] }}{% if c.description|length > 80 %}…{% endif %}
+            </p>
+            {% endif %}
+
+            <hr class="divider">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <a href="{{ url_for('company_detail', id=c.id) }}" class="btn btn-outline btn-sm">View</a>
+                <a href="{{ url_for('delete_company', id=c.id) }}"
+                   class="btn btn-danger btn-sm"
+                   onclick="return confirm('Delete {{ c.name }}? This cannot be undone.')">
+                   Delete
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🏢</div>
+        <p>No companies added yet. Use the form above to add one.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===== TAB: STUDENTS ===== -->
+<div id="tab-students" class="admin-tab-panel" style="display:none;">
+    <div class="section-heading">
+        <h3>🎓 Registered Students ({{ students|length }})</h3>
+    </div>
+
+    {% if students %}
+    <div class="card" style="padding:0;overflow:hidden;">
+        <table class="app-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>CGPA</th>
+                    <th>Applications</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in students %}
+                {% set student_apps = all_applications | selectattr('student.id', 'equalto', s.id) | list %}
+                {% set placed = student_apps | selectattr('application.status', 'equalto', 'Placed') | list %}
+                {% set scheduled = student_apps | selectattr('application.status', 'equalto', 'Scheduled') | list %}
+                {% set cgpa_color = '#34d399' if (s.cgpa or 0) >= 8 else '#fbbf24' if (s.cgpa or 0) >= 6 else '#f87171' %}
+                <tr>
+                    <td style="color:var(--text-dim);">{{ loop.index }}</td>
+                    <td style="font-weight:600;color:var(--text-main);">{{ s.name }}</td>
+                    <td>{{ s.email }}</td>
+                    <td>
+                        <span style="font-weight:600;color:{{ cgpa_color }};">
+                            {{ s.cgpa or '—' }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-blue">{{ student_apps|length }} applied</span>
+                    </td>
+                    <td>
+                        {% if placed %}
+                            <span class="badge status-placed">✓ Placed</span>
+                        {% elif scheduled %}
+                            <span class="badge status-scheduled">📅 Scheduled</span>
+                        {% elif student_apps %}
+                            <span class="badge status-pending">Pending</span>
+                        {% else %}
+                            <span style="color:var(--text-dim);font-size:13px;">No apps</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🎓</div>
+        <p>No students registered yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===== TAB: APPLICATIONS ===== -->
+<div id="tab-applications" class="admin-tab-panel" style="display:none;">
+    <div class="section-heading">
+        <h3>📋 All Applications ({{ all_applications|length }})</h3>
+    </div>
+
+    {% if all_applications %}
+    <div class="applications-list">
+        {% for item in all_applications %}
+        <div class="app-card card">
+            <div class="app-card-header">
+                <div>
+                    <h4 style="color:var(--text-main);margin-bottom:2px;">{{ item.student.name }}</h4>
+                    <p style="font-size:13px;color:var(--text-dim);">{{ item.student.email }} &nbsp;|&nbsp; CGPA: {{ item.student.cgpa or '—' }}</p>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:700;color:#93c5fd;">{{ item.company.name }}</div>
+                    <div style="font-size:13px;color:var(--text-dim);">{{ item.company.role }} · {{ item.company.package }}</div>
+                </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin:12px 0;flex-wrap:wrap;">
+                <span class="badge status-{{ item.application.status|lower }}">
+                    {% if item.application.status == 'Placed' %}✓ Placed
+                    {% elif item.application.status == 'Scheduled' %}📅 Scheduled
+                    {% elif item.application.status == 'Rejected' %}✗ Rejected
+                    {% else %}⏳ Pending{% endif %}
+                </span>
+                {% if item.interview %}
+                <span class="badge badge-blue">📅 {{ item.interview.interview_date }} {{ item.interview.interview_time }}</span>
+                <span class="badge badge-purple">📍 {{ item.interview.venue }}</span>
+                {% endif %}
+            </div>
+
+            {% if item.interview and item.interview.notes %}
+            <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">📝 {{ item.interview.notes }}</p>
+            {% endif %}
+
+            <div class="app-actions">
+                <!-- Update Status -->
+                <form method="POST" action="{{ url_for('update_status', app_id=item.application.id) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    {{ status_form.hidden_tag() }}
+                    <select name="status" class="admin-select-sm">
+                        <option value="Pending"   {% if item.application.status=='Pending'   %}selected{% endif %}>Pending</option>
+                        <option value="Scheduled" {% if item.application.status=='Scheduled' %}selected{% endif %}>Scheduled</option>
+                        <option value="Placed"    {% if item.application.status=='Placed'    %}selected{% endif %}>Placed</option>
+                        <option value="Rejected"  {% if item.application.status=='Rejected'  %}selected{% endif %}>Rejected</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline">Update Status</button>
+                </form>
+
+                <!-- Schedule Interview Toggle -->
+                <button class="btn btn-sm btn-success" onclick="toggleSchedule('sched-{{ item.application.id }}')">
+                    {% if item.interview %}✏️ Edit Interview{% else %}📅 Schedule Interview{% endif %}
+                </button>
+            </div>
+
+            <!-- Schedule Interview Form (hidden by default) -->
+            <div id="sched-{{ item.application.id }}" class="schedule-form" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+                <form method="POST" action="{{ url_for('schedule_interview', app_id=item.application.id) }}" class="admin-form">
+                    {{ sched_form.hidden_tag() }}
+                    <div class="admin-form-row">
+                        <input type="text" name="interview_date" placeholder="Date (e.g. 2025-06-15) *"
+                               value="{{ item.interview.interview_date if item.interview else '' }}" required>
+                        <input type="text" name="interview_time" placeholder="Time (e.g. 10:00 AM) *"
+                               value="{{ item.interview.interview_time if item.interview else '' }}" required>
+                    </div>
+                    <input type="text" name="venue" placeholder="Venue / Mode (e.g. Online / Room 301) *"
+                           value="{{ item.interview.venue if item.interview else '' }}" required style="width:100%;margin:6px 0;">
+                    <textarea name="notes" placeholder="Additional notes (optional)" style="width:100%;margin:6px 0;min-height:60px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg-main);color:var(--text-main);font-family:'DM Sans',sans-serif;font-size:14px;resize:vertical;">{{ item.interview.notes if item.interview else '' }}</textarea>
+                    <button type="submit" class="btn btn-success btn-sm" style="margin-top:6px;">💾 Save Interview</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="toggleSchedule('sched-{{ item.application.id }}')">Cancel</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>No applications submitted yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function showTab(tabId, btn) {
+    document.querySelectorAll('.admin-tab-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).style.display = 'block';
+    btn.classList.add('active');
+}
+function toggleSchedule(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+
+{% endblock %}

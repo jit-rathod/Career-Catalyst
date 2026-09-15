@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Best Picks — CareerCatalyst{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h2>✨ Recommended for You</h2>
+    <p>Companies where your CGPA of <b style="color:#60a5fa;">{{ current_user.cgpa }}</b> meets the eligibility criteria.</p>
+</div>
+
+{% if recommended %}
+<div class="company-grid">
+    {% set colors = ['av-0','av-1','av-2','av-3','av-4','av-5','av-6','av-7','av-8','av-9'] %}
+    {% for c in recommended %}
+    {% set ci = loop.index0 % 10 %}
+    <div class="card">
+        <!-- Rank badge -->
+        {% if loop.index == 1 %}
+            <span class="rec-badge" style="background:linear-gradient(135deg,#f59e0b,#d97706);">🥇 Top Pick</span>
+        {% elif loop.index == 2 %}
+            <span class="rec-badge" style="background:linear-gradient(135deg,#94a3b8,#64748b);">🥈 #2</span>
+        {% elif loop.index == 3 %}
+            <span class="rec-badge" style="background:linear-gradient(135deg,#a16207,#78350f);">🥉 #3</span>
+        {% else %}
+            <span class="rec-badge">#{{ loop.index }}</span>
+        {% endif %}
+
+        <div class="company-card-header">
+            <div class="company-avatar {{ colors[ci] }}">{{ c.name[0].upper() }}</div>
+            <div class="company-card-title">
+                <h3>{{ c.name }}</h3>
+            </div>
+        </div>
+
+        <div class="badges">
+            {% if c.location %}<span class="badge badge-purple">📍 {{ c.location }}</span>{% endif %}
+        </div>
+
+        <hr class="divider">
+        <p><b style="color:#93c5fd;">Role:</b>    {{ c.role }}</p>
+        <p><b style="color:#93c5fd;">Package:</b> <span style="color:#34d399;font-weight:600;">{{ c.package }}</span></p>
+        <p><b style="color:#93c5fd;">Min CGPA:</b> {{ c.min_cgpa }}</p>
+
+        {% if c.description %}
+        <p style="margin-top:8px;font-size:13px;color:var(--text-dim);line-height:1.5;">
+            {{ c.description[:90] }}{% if c.description|length > 90 %}…{% endif %}
+        </p>
+        {% endif %}
+
+        <hr class="divider">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            {% if c.id in applied_ids %}
+                <span class="btn btn-sm" style="background:#1e293b;cursor:default;">✓ Applied</span>
+            {% else %}
+                <a href="{{ url_for('company_detail', id=c.id) }}" class="btn btn-sm">Apply Now →</a>
+            {% endif %}
+            <a href="{{ url_for('company_detail', id=c.id) }}" class="btn btn-outline btn-sm">Details</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">😔</div>
+    <p>No companies match your current CGPA of {{ current_user.cgpa or '?' }}.</p>
+    <p style="margin-top:8px;font-size:14px;">Keep working hard — new companies are added regularly!</p>
+    <a href="{{ url_for('companies') }}" class="btn" style="margin-top:20px;">Browse All Companies →</a>
+</div>
+{% endif %}
+
+{% endblock %}

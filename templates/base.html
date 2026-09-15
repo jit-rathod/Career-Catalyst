@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CareerCatalyst{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <a href="{{ url_for('index') }}" class="brand">⚡ CareerCatalyst</a>
+
+    <button id="hamburger" class="hamburger" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+    </button>
+
+    <div id="nav-links" class="nav-links">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('companies') }}">Companies</a>
+            {% if current_user.role == 'student' %}
+                <a href="{{ url_for('recommendations') }}">✨ Best Picks</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" style="color:#ef4444;">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('register') }}" class="btn btn-sm">Get Started</a>
+        {% endif %}
+    </div>
+</nav>
+
+<!-- Flash Messages -->
+<div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+</div>
+
+<!-- Page Content -->
+<div class="container">
+    {% block content %}{% endblock %}
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ company.name }} — CareerCatalyst{% endblock %}
+
+{% block content %}
+
+<!-- Back link -->
+<a href="{{ url_for('companies') }}" style="display:inline-flex;align-items:center;gap:6px;color:var(--text-muted);font-size:14px;margin-bottom:20px;">
+    ← Back to Companies
+</a>
+
+<!-- Company Hero Banner -->
+{% set colors = ['av-0','av-1','av-2','av-3','av-4','av-5','av-6','av-7','av-8','av-9'] %}
+{% set ci = (company.name|length) % 10 %}
+
+<div class="detail-hero">
+    <div class="detail-header">
+        <div class="detail-avatar {{ colors[ci] }}">{{ company.name[0].upper() }}</div>
+        <div class="detail-title">
+            <h1>{{ company.name }}</h1>
+            <div class="badges" style="margin-top:6px;">
+                {% if company.location %}<span class="badge badge-purple">📍 {{ company.location }}</span>{% endif %}
+                {% if company.website %}
+                <a href="{{ company.website }}" target="_blank" class="badge badge-green">🌐 Website ↗</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Key Metrics -->
+    <div class="detail-meta">
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Job Role</span>
+            <span class="detail-meta-value">{{ company.role }}</span>
+        </div>
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Package</span>
+            <span class="detail-meta-value" style="color:#34d399;">{{ company.package }}</span>
+        </div>
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Min. CGPA</span>
+            <span class="detail-meta-value" style="color:#fbbf24;">{{ company.min_cgpa }}</span>
+        </div>
+        {% if company.location %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Location</span>
+            <span class="detail-meta-value">{{ company.location }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Two-column layout -->
+<div class="detail-grid">
+
+    <!-- Left: Description -->
+    <div>
+        {% if company.description %}
+        <div class="card" style="margin-bottom:20px;">
+            <h3 style="margin-bottom:12px;font-size:18px;">About {{ company.name }}</h3>
+            <p style="color:var(--text-muted);line-height:1.8;font-size:15px;">{{ company.description }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Eligibility Info for students -->
+        {% if current_user.role == 'student' %}
+        <div class="card">
+            <h3 style="font-size:16px;margin-bottom:12px;">Your Eligibility</h3>
+            <p style="margin-bottom:8px;"><b style="color:#93c5fd;">Your CGPA:</b> {{ current_user.cgpa or 'Not set' }}</p>
+            <p style="margin-bottom:12px;"><b style="color:#93c5fd;">Required CGPA:</b> {{ company.min_cgpa }}</p>
+
+            {% if current_user.cgpa %}
+            <div class="cgpa-bar-wrap">
+                <div class="cgpa-bar" data-pct="{{ [(current_user.cgpa / 10 * 100), 100]|min }}"></div>
+            </div>
+            {% endif %}
+
+            <div style="margin-top:14px;">
+                {% if eligible %}
+                    <span class="badge badge-green" style="font-size:13px;padding:6px 14px;">✓ You are eligible to apply</span>
+                {% else %}
+                    <span class="badge badge-red" style="font-size:13px;padding:6px 14px;">✗ Your CGPA is below the requirement</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right: Apply Box -->
+    <div>
+        <div class="apply-box">
+            {% if current_user.role == 'student' %}
+
+                {% if already_applied %}
+                    <h3>Application Sent ✓</h3>
+                    <p>You have already submitted your application for this company. Good luck!</p>
+                    <span class="badge status-pending" style="font-size:13px;padding:8px 16px;">Status: Pending Review</span>
+
+                {% elif not eligible %}
+                    <h3>Not Eligible</h3>
+                    <p>Your CGPA ({{ current_user.cgpa or '?' }}) is below the minimum required CGPA of {{ company.min_cgpa }} for this role.</p>
+                    <a href="{{ url_for('recommendations') }}" class="btn" style="width:100%;justify-content:center;margin-top:12px;">
+                        ✨ See Recommended Companies
+                    </a>
+
+                {% else %}
+                    <h3>Apply Now</h3>
+                    <p>Fill in the details below to submit your application to <b>{{ company.name }}</b>.</p>
+
+                    <form method="POST" action="{{ url_for('apply', id=company.id) }}">
+                        {{ form.hidden_tag() }}
+
+                        <label class="form-label">Phone Number *</label>
+                        {{ form.phone(class="input", placeholder="e.g. +91 98765 43210") }}
+
+                        <label class="form-label">Resume Link</label>
+                        {{ form.resume_link(class="input", placeholder="Google Drive / LinkedIn URL") }}
+
+                        <label class="form-label">Cover Letter *</label>
+                        {{ form.cover_letter(class="textarea-input", placeholder="Tell us why you're a great fit for this role at {{ company.name }}...") }}
+
+                        <button type="submit" class="btn" style="width:100%;justify-content:center;margin-top:16px;padding:13px;">
+                            Submit Application →
+                        </button>
+                    </form>
+                {% endif %}
+
+            {% elif current_user.role == 'admin' %}
+                <h3>Admin Actions</h3>
+                <p>Manage this company listing.</p>
+                <a href="{{ url_for('delete_company', id=company.id) }}"
+                   class="btn btn-danger"
+                   style="width:100%;justify-content:center;margin-top:12px;"
+                   onclick="return confirm('Delete {{ company.name }}?')">
+                   Delete Company
+                </a>
+            {% else %}
+                <h3>Login to Apply</h3>
+                <p>Please log in as a student to apply to this company.</p>
+                <a href="{{ url_for('login') }}" class="btn" style="width:100%;justify-content:center;margin-top:12px;">Login →</a>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Register — CareerCatalyst{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-logo">🎓</div>
+        <h2>Create Account</h2>
+        <p class="auth-sub">Join CareerCatalyst as a student</p>
+
+        <form method="POST">
+            {{ form.hidden_tag() }}
+
+            <label class="form-label">Full Name</label>
+            {{ form.name(class="input", placeholder="Your full name") }}
+
+            <label class="form-label" style="margin-top:14px;">Email Address</label>
+            {{ form.email(class="input", placeholder="you@example.com") }}
+
+            <label class="form-label" style="margin-top:14px;">Password</label>
+            {{ form.password(class="input", placeholder="Choose a strong password") }}
+
+            <label class="form-label" style="margin-top:14px;">CGPA <span style="color:var(--text-dim);font-size:12px;">(out of 10)</span></label>
+            {{ form.cgpa(class="input", placeholder="e.g. 8.5", id="cgpa-field") }}
+
+            <button type="submit" class="btn" style="width:100%;justify-content:center;margin-top:20px;padding:13px;">
+                Create Account →
+            </button>
+        </form>
+
+        <p class="auth-footer">
+            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

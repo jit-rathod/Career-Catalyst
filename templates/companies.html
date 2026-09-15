@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Companies — CareerCatalyst{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h2>All Companies</h2>
+    <p>Browse {{ companies|length }} companies</p>
+</div>
+
+{% if companies %}
+<div class="company-grid">
+    {% set colors = ['av-0','av-1','av-2','av-3','av-4','av-5','av-6','av-7','av-8','av-9'] %}
+    {% for c in companies %}
+    {% set ci = loop.index0 % 10 %}
+    <div class="card">
+        <!-- Recommendation tag for eligible students -->
+        {% if current_user.role == 'student' and current_user.cgpa and current_user.cgpa >= c.min_cgpa %}
+            <span class="rec-badge">✓ Eligible</span>
+        {% endif %}
+
+        <div class="company-card-header">
+            <div class="company-avatar {{ colors[ci] }}">{{ c.name[0].upper() }}</div>
+            <div class="company-card-title">
+                <h3>{{ c.name }}</h3>
+            </div>
+        </div>
+
+        <div class="badges">
+            {% if c.location %}<span class="badge badge-purple">📍 {{ c.location }}</span>{% endif %}
+        </div>
+
+        <hr class="divider">
+
+        <p><b style="color:#93c5fd;">Role:</b> {{ c.role }}</p>
+        <p><b style="color:#93c5fd;">Package:</b> {{ c.package }}</p>
+        <p><b style="color:#93c5fd;">Min CGPA:</b> {{ c.min_cgpa }}</p>
+
+        {% if c.description %}
+        <p style="margin-top:10px;font-size:13px;color:#4a6890;line-height:1.5;">
+            {{ c.description[:100] }}{% if c.description|length > 100 %}…{% endif %}
+        </p>
+        {% endif %}
+
+        <hr class="divider">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="{{ url_for('company_detail', id=c.id) }}" class="btn btn-outline btn-sm">View Details</a>
+
+            {% if current_user.role == 'student' %}
+                {% if c.id in applied_ids %}
+                    <span class="btn btn-sm" style="background:#1e293b;cursor:default;opacity:0.7;">✓ Applied</span>
+                {% elif current_user.cgpa and current_user.cgpa >= c.min_cgpa %}
+                    <a href="{{ url_for('company_detail', id=c.id) }}" class="btn btn-sm">Apply Now</a>
+                {% else %}
+                    <span class="btn btn-sm" style="background:#1e293b;cursor:not-allowed;opacity:0.6;">CGPA too low</span>
+                {% endif %}
+            {% endif %}
+
+            {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('delete_company', id=c.id) }}"
+                   class="btn btn-danger btn-sm"
+                   onclick="return confirm('Delete {{ c.name }}?')">Delete</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🏢</div>
+    <p>No companies listed yet. Check back soon!</p>
+</div>
+{% endif %}
+
+{% endblock %}
