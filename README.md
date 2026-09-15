@@ -306,7 +306,3 @@ This project demonstrates practical knowledge of:
 * Web Application Development
 
 ---
-
-## Author
-
-**Jit Rathod**
